@@ -26,6 +26,18 @@ func preferLen(m dsl.Matcher) {
 				m["t"].Type.Is("*require.Assertions"),
 		).Suggest("$t.Len($a, $length)")
 
+	m.Match(`$pkg.Exactly($t, $length, len($a))`).
+		Where(
+			m["pkg"].Object.Is("PkgName") &&
+				m["pkg"].Text.Matches("require|assert"),
+		).Suggest("$pkg.Len($t, $a, $length)")
+
+	m.Match(`$t.Exactly($length, len($a))`).
+		Where(
+			m["t"].Type.Is("*assert.Assertions") ||
+				m["t"].Type.Is("*require.Assertions"),
+		).Suggest("$t.Len($a, $length)")
+
 	m.Match(`$pkg.Equal($t, len($a), $length)`).
 		Where(
 			m["pkg"].Object.Is("PkgName") &&
@@ -33,6 +45,18 @@ func preferLen(m dsl.Matcher) {
 		).Suggest("$pkg.Len($t, $a, $length)")
 
 	m.Match(`$t.Equal(len($a), $length)`).
+		Where(
+			m["t"].Type.Is("*assert.Assertions") ||
+				m["t"].Type.Is("*require.Assertions"),
+		).Suggest("$t.Len($a, $length)")
+
+	m.Match(`$pkg.Exactly($t, len($a), $length)`).
+		Where(
+			m["pkg"].Object.Is("PkgName") &&
+				m["pkg"].Text.Matches("require|assert"),
+		).Suggest("$pkg.Len($t, $a, $length)")
+
+	m.Match(`$t.Exactly(len($a), $length)`).
 		Where(
 			m["t"].Type.Is("*assert.Assertions") ||
 				m["t"].Type.Is("*require.Assertions"),
@@ -92,6 +116,18 @@ func preferNil(m dsl.Matcher) {
 				m["t"].Type.Is("*require.Assertions"),
 		).Suggest("$t.Nil($a)")
 
+	m.Match(`$pkg.Exactly($t, nil, $a)`).
+		Where(
+			m["pkg"].Object.Is("PkgName") &&
+				m["pkg"].Text.Matches("require|assert"),
+		).Suggest("$pkg.Nil($t, $a)")
+
+	m.Match(`$t.Exactly(nil, $a)`).
+		Where(
+			m["t"].Type.Is("*assert.Assertions") ||
+				m["t"].Type.Is("*require.Assertions"),
+		).Suggest("$t.Nil($a)")
+
 	m.Match(`$pkg.Same($t, nil, $a)`).
 		Where(
 			m["pkg"].Object.Is("PkgName") &&
@@ -111,6 +147,18 @@ func preferNil(m dsl.Matcher) {
 		).Suggest("$pkg.Nil($t, $a)")
 
 	m.Match(`$t.Equal($a, nil)`).
+		Where(
+			m["t"].Type.Is("*assert.Assertions") ||
+				m["t"].Type.Is("*require.Assertions"),
+		).Suggest("$t.Nil($a)")
+
+	m.Match(`$pkg.Exactly($t, $a, nil)`).
+		Where(
+			m["pkg"].Object.Is("PkgName") &&
+				m["pkg"].Text.Matches("require|assert"),
+		).Suggest("$pkg.Nil($t, $a)")
+
+	m.Match(`$t.Exactly($a, nil)`).
 		Where(
 			m["t"].Type.Is("*assert.Assertions") ||
 				m["t"].Type.Is("*require.Assertions"),
@@ -160,6 +208,52 @@ func preferNotNil(m dsl.Matcher) {
 			m["t"].Type.Is("*assert.Assertions") ||
 				m["t"].Type.Is("*require.Assertions"),
 		).Suggest("$t.NotNil($a)")
+}
+
+//doc:summary Prefer require.ErrorIs instead of comparing error values by Equal.
+//doc:before  require.Equal(t, target, a)
+//doc:after   require.ErrorIs(t, a, target)
+//doc:tags    diagnostic
+func preferErrorIs(m dsl.Matcher) {
+	m.Import("github.com/stretchr/testify/assert")
+	m.Import("github.com/stretchr/testify/require")
+
+	m.Match(`$pkg.Equal($t, $target, $a)`).
+		Where(
+			(m["a"].Type.Is("error") && m["target"].Object.Is("Var")) &&
+				m["pkg"].Object.Is("PkgName") &&
+				m["pkg"].Text.Matches("require|assert"),
+		).Suggest("$pkg.ErrorIs($t, $a, $target)")
+
+	m.Match(`$t.Equal($target, $a)`).
+		Where(
+			(m["a"].Type.Is("error") && m["target"].Object.Is("Var")) &&
+				m["t"].Type.Is("*assert.Assertions") ||
+				m["t"].Type.Is("*require.Assertions"),
+		).Suggest("$t.ErrorIs($a, $target)")
+}
+
+//doc:summary Prefer require.ErrorAs instead of comparing error values by Equal.
+//doc:before  require.Equal(t, target, a)
+//doc:after   require.ErrorAs(t, a, target)
+//doc:tags    diagnostic
+func preferErrorAs(m dsl.Matcher) {
+	m.Import("github.com/stretchr/testify/assert")
+	m.Import("github.com/stretchr/testify/require")
+
+	m.Match(`$pkg.Equal($t, $target, $a)`).
+		Where(
+			(m["a"].Type.Is("error") && !m["target"].Object.Is("Var")) &&
+				m["pkg"].Object.Is("PkgName") &&
+				m["pkg"].Text.Matches("require|assert"),
+		).Suggest("$pkg.ErrorAs($t, $a, $target)")
+
+	m.Match(`$t.Equal($target, $a)`).
+		Where(
+			(m["a"].Type.Is("error") && !m["target"].Object.Is("Var")) &&
+				m["t"].Type.Is("*assert.Assertions") ||
+				m["t"].Type.Is("*require.Assertions"),
+		).Suggest("$t.ErrorAs($a, $target)")
 }
 
 //doc:summary Prefer require.NoError instead of comparing to nil.
