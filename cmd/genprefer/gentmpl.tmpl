@@ -11,15 +11,15 @@ func {{ .Name }}(m dsl.Matcher) {
 	{{ $s := $ }}
 	{{- range $match := $s.Match }}
 	m.Match(`{{ printf "$pkg.%v" $match.Name }}($t, {{ args $match.Args }})`).
-		Where({{ if $s.Cond }}
-			({{ $s.Cond }}) && {{- end }}
+		Where({{ if $match.Cond }}
+			({{ $match.Cond }}) && {{- end }}
 			m["pkg"].Object.Is("PkgName") &&
 				m["pkg"].Text.Matches("require|assert"),
 		).Suggest("{{ printf "$pkg.%v" $s.Suggest.Name }}($t, {{ args $s.Suggest.Args }})")
 
 	m.Match(`{{ printf "$t.%v" $match.Name }}({{ args $match.Args }})`).
-		Where({{ if $s.Cond }}
-			({{ $s.Cond }}) && {{- end }}
+		Where({{ if $match.Cond }}
+			({{ $match.Cond }}) && {{- end }}
 			m["t"].Type.Is("*assert.Assertions") ||
 				m["t"].Type.Is("*require.Assertions"),
 		).Suggest("{{ printf "$t.%v" $s.Suggest.Name }}({{ args $s.Suggest.Args }})")

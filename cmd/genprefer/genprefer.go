@@ -43,7 +43,9 @@ func (r *Rule) setDefaults() {
 }
 
 func rules() (r []Rule) {
-	condIsError := `m["a"].Type.Is("error")`
+	const (
+		condIsError = `m["a"].Type.Is("error")`
+	)
 
 	r = []Rule{
 		{
@@ -52,6 +54,7 @@ func rules() (r []Rule) {
 			AssocMatch: true,
 			Match: []Method{
 				{Name: "Equal", Args: []string{"$length", "len($a)"}},
+				{Name: "Exactly", Args: []string{"$length", "len($a)"}},
 			},
 			Suggest: Method{Name: "Len", Args: []string{"$a", "$length"}},
 		},
@@ -70,6 +73,7 @@ func rules() (r []Rule) {
 			AssocMatch: true,
 			Match: []Method{
 				{Name: "Equal", Args: []string{"nil", "$a"}},
+				{Name: "Exactly", Args: []string{"nil", "$a"}},
 				{Name: "Same", Args: []string{"nil", "$a"}},
 			},
 			Suggest: Method{Name: "Nil", Args: []string{"$a"}},
@@ -84,20 +88,42 @@ func rules() (r []Rule) {
 			Suggest: Method{Name: "NotNil", Args: []string{"$a"}},
 		},
 		{
+			Name:    "preferErrorIs",
+			Summary: "Prefer require.ErrorIs instead of comparing error values by Equal.",
+			Match: []Method{
+				{
+					Name: "Equal",
+					Args: []string{"$target", "$a"},
+					Cond: condIsError + `&& m["target"].Object.Is("Var")`,
+				},
+			},
+			Suggest: Method{Name: "ErrorIs", Args: []string{"$a", "$target"}},
+		},
+		{
+			Name:    "preferErrorAs",
+			Summary: "Prefer require.ErrorAs instead of comparing error values by Equal.",
+			Match: []Method{
+				{
+					Name: "Equal",
+					Args: []string{"$target", "$a"},
+					Cond: condIsError + `&& !m["target"].Object.Is("Var")`,
+				},
+			},
+			Suggest: Method{Name: "ErrorAs", Args: []string{"$a", "$target"}},
+		},
+		{
 			Name:    "preferError",
 			Summary: "Prefer require.NoError instead of comparing to nil.",
-			Cond:    condIsError,
 			Match: []Method{
-				{Name: "NotNil", Args: []string{"$a"}},
+				{Name: "NotNil", Args: []string{"$a"}, Cond: condIsError},
 			},
 			Suggest: Method{Name: "Error", Args: []string{"$a"}},
 		},
 		{
 			Name:    "preferNoError",
 			Summary: "Prefer require.NoError instead of comparing to nil.",
-			Cond:    condIsError,
 			Match: []Method{
-				{Name: "Nil", Args: []string{"$a"}},
+				{Name: "Nil", Args: []string{"$a"}, Cond: condIsError},
 			},
 			Suggest: Method{Name: "NoError", Args: []string{"$a"}},
 		},
